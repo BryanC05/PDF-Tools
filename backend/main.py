@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from pypdf import PdfWriter
+from pypdf import PdfWriter, PdfReader
 import os
 import uuid
 import io
