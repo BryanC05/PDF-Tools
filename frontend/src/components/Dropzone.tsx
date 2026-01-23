@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type DragEvent, type ChangeEvent } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Upload, FileUp } from 'lucide-react';
 import { cn } from '../lib/utils';
 

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FileImage, Upload, Loader2, Download, X, ImageDown } from 'lucide-react';
+import { FileImage, Upload, Loader2, X, ImageDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
