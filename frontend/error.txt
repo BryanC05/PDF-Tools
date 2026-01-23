@@ -1,0 +1,6 @@
+src/App.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/Dropzone.tsx(4,1): error TS6192: All imports in import declaration are unused.
+src/components/FileList.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/FileList.tsx(9,5): error TS1484: 'DragEndEvent' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/components/SortableFile.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/SortableFile.tsx(6,1): error TS6133: 'motion' is declared but its value is never read.
