@@ -13,16 +13,22 @@ from contextlib import asynccontextmanager
 # Session tracking: session_id -> set of file paths
 session_files: Dict[str, Set[str]] = {}
 
-# Cleanup old files on startup
+# Cleanup old files on startup (older than 1 hour)
 def cleanup_old_files():
-    """Delete all files in uploads and merged directories on startup."""
+    """Delete files in uploads and merged directories that are older than 1 hour."""
+    now = time.time()
+    cutoff = now - 3600  # 1 hour ago
+    
     for directory in [UPLOAD_DIR, MERGED_DIR]:
         if os.path.exists(directory):
             for filename in os.listdir(directory):
                 file_path = os.path.join(directory, filename)
                 try:
                     if os.path.isfile(file_path):
-                        os.unlink(file_path)
+                        creation_time = os.path.getctime(file_path)
+                        if creation_time < cutoff:
+                            os.unlink(file_path)
+                            print(f"Deleted old file: {filename}")
                 except Exception as e:
                     print(f"Error deleting {file_path}: {e}")
 
@@ -35,11 +41,10 @@ os.makedirs(MERGED_DIR, exist_ok=True)
 async def lifespan(app: FastAPI):
     # Startup: clean old files
     cleanup_old_files()
-    print("✓ Cleaned up old files on startup")
+    print("✓ Cleaned up old files (>1h) on startup")
     yield
-    # Shutdown: clean all files
-    cleanup_old_files()
-    print("✓ Cleaned up files on shutdown")
+    # Shutdown: do nothing (preserve files for dev)
+    print("Request finished")
 
 app = FastAPI(lifespan=lifespan)
 
