@@ -88,7 +88,7 @@ async def cleanup_session(request: CleanupRequest):
     return {"deleted": deleted, "session_id": request.session_id}
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...), session_id: str = Form(None)):
+def upload_file(file: UploadFile = File(...), session_id: str = Form(None)):
     file_id = str(uuid.uuid4())
     stored_name = f"{file_id}_{file.filename}"
     file_path = os.path.join(UPLOAD_DIR, stored_name)
@@ -111,7 +111,7 @@ class MergeRequest(BaseModel):
     files: List[str] # List of original_names
 
 @app.post("/merge")
-async def merge_pdfs(request: MergeRequest):
+def merge_pdfs(request: MergeRequest):
     pdf_writer = PdfWriter()
     
     for filename in request.files:
@@ -147,7 +147,7 @@ def parse_page_ranges(range_str: str, max_pages: int) -> List[int]:
     return sorted(list(pages))
 
 @app.post("/split")
-async def split_pdf(request: SplitRequest):
+def split_pdf(request: SplitRequest):
     file_path = os.path.join(UPLOAD_DIR, request.filename)
     if not os.path.exists(file_path):
         # Also check merged dir just in case user wants to split a result
@@ -188,7 +188,7 @@ class OrganizeRequest(BaseModel):
     page_indices: List[int] # Exact 0-based indices in desired order
 
 @app.post("/organize")
-async def organize_pdf(request: OrganizeRequest):
+def organize_pdf(request: OrganizeRequest):
     file_path = os.path.join(UPLOAD_DIR, request.filename)
     if not os.path.exists(file_path):
         file_path = os.path.join(MERGED_DIR, request.filename)
@@ -226,7 +226,7 @@ async def download_file(filename: str):
 # ============== CONVERSION FEATURES ==============
 
 @app.post("/images-to-pdf")
-async def images_to_pdf(files: List[UploadFile] = File(...)):
+def images_to_pdf(files: List[UploadFile] = File(...)):
     """Convert multiple images to a single PDF."""
     import img2pdf
     from PIL import Image
@@ -238,7 +238,7 @@ async def images_to_pdf(files: List[UploadFile] = File(...)):
     try:
         image_bytes_list = []
         for f in files:
-            content = await f.read()
+            content = f.file.read()
             # Validate it's an image
             try:
                 img = Image.open(io.BytesIO(content))
@@ -266,7 +266,7 @@ async def images_to_pdf(files: List[UploadFile] = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/pdf-to-images")
-async def pdf_to_images(file: UploadFile = File(...)):
+def pdf_to_images(file: UploadFile = File(...)):
     """Convert a PDF to images (returns zip of PNGs)."""
     import zipfile
     from pypdf import PdfReader
@@ -278,7 +278,7 @@ async def pdf_to_images(file: UploadFile = File(...)):
         raise HTTPException(status_code=501, detail="pdf2image not installed. Run: pip install pdf2image (requires poppler)")
     
     try:
-        content = await file.read()
+        content = file.file.read()
         images = convert_from_bytes(content, dpi=150)
         
         zip_filename = f"pdf_images_{uuid.uuid4()}.zip"
@@ -298,12 +298,12 @@ async def pdf_to_images(file: UploadFile = File(...)):
 # ============== OPTIMIZATION & SECURITY ==============
 
 @app.post("/compress")
-async def compress_pdf(file: UploadFile = File(...)):
+def compress_pdf(file: UploadFile = File(...)):
     """Compress a PDF to reduce file size."""
     from pypdf import PdfReader, PdfWriter
     
     try:
-        content = await file.read()
+        content = file.file.read()
         reader = PdfReader(io.BytesIO(content))
         writer = PdfWriter()
         
@@ -336,12 +336,12 @@ class ProtectRequest(BaseModel):
     password: str
 
 @app.post("/protect")
-async def protect_pdf(file: UploadFile = File(...), password: str = Form(...)):
+def protect_pdf(file: UploadFile = File(...), password: str = Form(...)):
     """Add password protection to a PDF."""
     from pypdf import PdfReader, PdfWriter
     
     try:
-        content = await file.read()
+        content = file.file.read()
         reader = PdfReader(io.BytesIO(content))
         writer = PdfWriter()
         
@@ -362,7 +362,7 @@ async def protect_pdf(file: UploadFile = File(...), password: str = Form(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/watermark")
-async def watermark_pdf(
+def watermark_pdf(
     file: UploadFile = File(...), 
     text: str = Form("CONFIDENTIAL"),
     opacity: float = Form(0.3),
@@ -380,7 +380,7 @@ async def watermark_pdf(
     from reportlab.lib.colors import HexColor
     
     try:
-        content = await file.read()
+        content = file.file.read()
         reader = PdfReader(io.BytesIO(content))
         writer = PdfWriter()
         
