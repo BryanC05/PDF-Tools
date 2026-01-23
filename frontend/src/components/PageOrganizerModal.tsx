@@ -44,6 +44,9 @@ interface PageItem {
     image: string;
 }
 
+// Configure Axios base URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export function PageOrganizerModal({ fileName, isOpen, onClose, onOrganizeComplete }: PageOrganizerModalProps) {
     const [pages, setPages] = useState<PageItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +68,7 @@ export function PageOrganizerModal({ fileName, isOpen, onClose, onOrganizeComple
             setError(null);
             setPages([]);
 
-            const fileUrl = `http://localhost:8000/uploads/${fileName}`;
+            const fileUrl = `${API_URL}/uploads/${fileName}`;
             console.log(`[PageOrganizer] Loading PDF from: ${fileUrl}`);
             console.log(`[PageOrganizer] PDF.js Version: ${pdfjsLib.version}`);
 
@@ -138,11 +141,11 @@ export function PageOrganizerModal({ fileName, isOpen, onClose, onOrganizeComple
         setIsSaving(true);
         try {
             const pageIndices = pages.map(p => p.originalIndex);
-            const response = await axios.post('http://localhost:8000/organize', {
+            const response = await axios.post(`${API_URL}/organize`, {
                 filename: fileName,
                 page_indices: pageIndices
             });
-            onOrganizeComplete(`http://localhost:8000${response.data.url}`);
+            onOrganizeComplete(`${API_URL}${response.data.url}`);
             onClose();
         } catch (err) {
             console.error("Failed to save organized PDF", err);

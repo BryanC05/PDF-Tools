@@ -11,6 +11,9 @@ interface SplitterModalProps {
     onSplitComplete: (url: string) => void;
 }
 
+// Configure Axios base URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export function SplitterModal({ filename, originalName, isOpen, onClose, onSplitComplete }: SplitterModalProps) {
     const [pageRanges, setPageRanges] = useState('');
     const [isSplitting, setIsSplitting] = useState(false);
@@ -18,11 +21,11 @@ export function SplitterModal({ filename, originalName, isOpen, onClose, onSplit
     const handleSplit = async () => {
         setIsSplitting(true);
         try {
-            const response = await axios.post('http://localhost:8000/split', {
+            const response = await axios.post(`${API_URL}/split`, {
                 filename: filename,
                 page_ranges: pageRanges
             });
-            onSplitComplete(`http://localhost:8000${response.data.url}`);
+            onSplitComplete(`${API_URL}${response.data.url}`);
             onClose();
         } catch (error) {
             console.error("Split failed", error);
