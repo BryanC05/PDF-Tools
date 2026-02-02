@@ -49,15 +49,22 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # CORS configuration - use environment variable for production
-import os
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
+# Set CORS_ORIGINS env var to comma-separated list of origins, or leave unset for all origins
+CORS_ORIGINS_ENV = os.getenv("CORS_ORIGINS", "")
+
+# Parse origins: if empty or "*", allow all; otherwise split by comma
+if CORS_ORIGINS_ENV == "" or CORS_ORIGINS_ENV == "*":
+    CORS_ORIGINS = ["*"]
+else:
+    CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS_ENV.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS if CORS_ORIGINS != ["*"] else ["*"],
-    allow_credentials=True,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True if CORS_ORIGINS != ["*"] else False,  # credentials can't be used with wildcard
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Mount uploads so frontend can fetch PDFs for previews
