@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, LayoutGrid, X, Save } from 'lucide-react';
+import { Loader2, LayoutGrid, X, Save, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import {
@@ -56,6 +56,7 @@ export function PageOrganizerModal({ fileName, originalName, isOpen, onClose, on
     const [pages, setPages] = useState<PageItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const sensors = useSensors(
@@ -165,6 +166,26 @@ export function PageOrganizerModal({ fileName, originalName, isOpen, onClose, on
         }
     };
 
+    const handleDownload = async () => {
+        if (!fileName) return;
+        setIsDownloading(true);
+        try {
+            const pageIndices = pages.map(p => p.originalIndex);
+            const response = await axios.post(`${API_URL}/organize`, {
+                filename: fileName,
+                page_indices: pageIndices
+            });
+            // Open the download URL in a new tab
+            window.open(`${API_URL}${response.data.url}`, '_blank');
+            onClose();
+        } catch (err) {
+            console.error("Failed to download organized PDF", err);
+            alert("Failed to download.");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -236,8 +257,23 @@ export function PageOrganizerModal({ fileName, originalName, isOpen, onClose, on
                                 Cancel
                             </button>
                             <button
+                                onClick={handleDownload}
+                                disabled={isLoading || isDownloading || isSaving || pages.length === 0}
+                                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {isDownloading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" /> Downloading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download className="w-4 h-4" /> Download
+                                    </>
+                                )}
+                            </button>
+                            <button
                                 onClick={handleSave}
-                                disabled={isLoading || isSaving || pages.length === 0}
+                                disabled={isLoading || isSaving || isDownloading || pages.length === 0}
                                 className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                             >
                                 {isSaving ? (
@@ -246,7 +282,7 @@ export function PageOrganizerModal({ fileName, originalName, isOpen, onClose, on
                                     </>
                                 ) : (
                                     <>
-                                        <Save className="w-4 h-4" /> Save Changes
+                                        <Save className="w-4 h-4" /> Save for Merge
                                     </>
                                 )}
                             </button>
