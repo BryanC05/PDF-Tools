@@ -28,6 +28,11 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
     import.meta.url
 ).toString();
 
+interface OrganizeResult {
+    newFileName: string;  // Server's stored filename for the organized PDF
+    displayName: string;  // Original display name
+}
+
 interface PageOrganizerModalProps {
     fileUrl: string | null;
     fileId: string;
@@ -35,7 +40,7 @@ interface PageOrganizerModalProps {
     originalName: string;
     isOpen: boolean;
     onClose: () => void;
-    onOrganizeComplete: (url: string) => void;
+    onOrganizeComplete: (result: OrganizeResult) => void;
 }
 
 interface PageItem {
@@ -47,7 +52,7 @@ interface PageItem {
 // Configure Axios base URL
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export function PageOrganizerModal({ fileName, isOpen, onClose, onOrganizeComplete }: PageOrganizerModalProps) {
+export function PageOrganizerModal({ fileName, originalName, isOpen, onClose, onOrganizeComplete }: PageOrganizerModalProps) {
     const [pages, setPages] = useState<PageItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -145,7 +150,12 @@ export function PageOrganizerModal({ fileName, isOpen, onClose, onOrganizeComple
                 filename: fileName,
                 page_indices: pageIndices
             });
-            onOrganizeComplete(`${API_URL}${response.data.url}`);
+            // Extract the new filename from the URL (e.g., "/download/organized_xxx.pdf" -> "organized_xxx.pdf")
+            const newFileName = response.data.url.split('/').pop() || response.data.url;
+            onOrganizeComplete({
+                newFileName: newFileName,
+                displayName: originalName.replace('.pdf', '') + ' (organized).pdf'
+            });
             onClose();
         } catch (err) {
             console.error("Failed to save organized PDF", err);

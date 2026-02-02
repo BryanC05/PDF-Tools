@@ -261,8 +261,20 @@ function App() {
           originalName={organizingFile.name}
           fileUrl={null}
           onClose={() => setOrganizingFile(null)}
-          onOrganizeComplete={(url) => {
-            window.open(url, '_blank');
+          onOrganizeComplete={(result) => {
+            // Replace the file in the list with the organized version
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === organizingFile.id
+                  ? {
+                    ...f,
+                    name: result.displayName,
+                    original_name: result.newFileName,
+                  }
+                  : f
+              )
+            );
+            setMergedUrl(null); // Reset any previous merge result
           }}
         />
       )}
