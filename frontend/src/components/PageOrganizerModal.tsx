@@ -164,7 +164,7 @@ export function PageOrganizerModal({ fileName, originalName, isOpen, onClose, on
             const newFileName = response.data.url.split('/').pop() || response.data.url;
             onOrganizeComplete({
                 newFileName: newFileName,
-                displayName: originalName.replace('.pdf', '') + ' (organized).pdf'
+                displayName: originalName
             });
             onClose();
         } catch (err) {
