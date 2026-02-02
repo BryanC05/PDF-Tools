@@ -74,7 +74,16 @@ export function PageOrganizerModal({ fileName, originalName, isOpen, onClose, on
             setError(null);
             setPages([]);
 
-            const fileUrl = `${API_URL}/uploads/${fileName}`;
+            // Determine correct directory based on filename prefix
+            // Files starting with organized_, split_, compressed_, etc. are in /merged
+            const isProcessedFile = fileName.startsWith('organized_') ||
+                fileName.startsWith('split_') ||
+                fileName.startsWith('compressed_') ||
+                fileName.startsWith('protected_') ||
+                fileName.startsWith('watermarked_') ||
+                fileName.startsWith('images_');
+            const directory = isProcessedFile ? 'merged' : 'uploads';
+            const fileUrl = `${API_URL}/${directory}/${fileName}`;
             console.log(`[PageOrganizer] Loading PDF from: ${fileUrl}`);
             console.log(`[PageOrganizer] PDF.js Version: ${pdfjsLib.version}`);
 

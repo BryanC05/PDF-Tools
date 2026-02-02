@@ -70,6 +70,8 @@ app.add_middleware(
 # Mount uploads so frontend can fetch PDFs for previews
 from fastapi.staticfiles import StaticFiles
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+# Mount merged directory so organized/processed files can also be previewed
+app.mount("/merged", StaticFiles(directory=MERGED_DIR), name="merged")
 
 from pydantic import BaseModel
 
