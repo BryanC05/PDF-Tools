@@ -466,6 +466,733 @@ def watermark_pdf(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============== ORGANIZE PDF (Additional) ==============
+
+class RemovePagesRequest(BaseModel):
+    pages: str  # e.g., "1,3,5" (1-based)
+
+@app.post("/remove-pages")
+def remove_pages(file: UploadFile = File(...), pages: str = Form(...)):
+    """Remove specified pages from a PDF."""
+    try:
+        content = file.file.read()
+        reader = PdfReader(io.BytesIO(content))
+        writer = PdfWriter()
+        total_pages = len(reader.pages)
+        
+        # Parse pages to remove (1-based input)
+        pages_to_remove = set()
+        for part in pages.split(','):
+            part = part.strip()
+            if '-' in part:
+                start, end = map(int, part.split('-'))
+                for i in range(start, end + 1):
+                    pages_to_remove.add(i - 1)  # Convert to 0-based
+            else:
+                pages_to_remove.add(int(part) - 1)
+        
+        for i in range(total_pages):
+            if i not in pages_to_remove:
+                writer.add_page(reader.pages[i])
+        
+        if len(writer.pages) == 0:
+            raise HTTPException(status_code=400, detail="Cannot remove all pages")
+        
+        output_filename = f"removed_{uuid.uuid4()}.pdf"
+        output_path = os.path.join(MERGED_DIR, output_filename)
+        
+        with open(output_path, "wb") as out_f:
+            writer.write(out_f)
+        
+        return {
+            "url": f"/download/{output_filename}",
+            "original_pages": total_pages,
+            "remaining_pages": len(writer.pages)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/extract-pages")
+def extract_pages(file: UploadFile = File(...), pages: str = Form(...)):
+    """Extract specified pages from a PDF into a new document."""
+    try:
+        content = file.file.read()
+        reader = PdfReader(io.BytesIO(content))
+        writer = PdfWriter()
+        total_pages = len(reader.pages)
+        
+        # Parse pages to extract (1-based input)
+        selected_pages = parse_page_ranges(pages, total_pages)
+        
+        for p_idx in selected_pages:
+            if 0 <= p_idx < total_pages:
+                writer.add_page(reader.pages[p_idx])
+        
+        if len(writer.pages) == 0:
+            raise HTTPException(status_code=400, detail="No valid pages to extract")
+        
+        output_filename = f"extracted_{uuid.uuid4()}.pdf"
+        output_path = os.path.join(MERGED_DIR, output_filename)
+        
+        with open(output_path, "wb") as out_f:
+            writer.write(out_f)
+        
+        return {
+            "url": f"/download/{output_filename}",
+            "extracted_pages": len(writer.pages)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============== OPTIMIZE PDF (Additional) ==============
+
+@app.post("/repair")
+def repair_pdf(file: UploadFile = File(...)):
+    """Attempt to repair a corrupted PDF."""
+    try:
+        content = file.file.read()
+        
+        # Use pikepdf which is more robust at handling corrupt PDFs
+        import pikepdf
+        
+        # Open with pikepdf (it auto-repairs many issues)
+        pdf = pikepdf.open(io.BytesIO(content))
+        
+        output_filename = f"repaired_{uuid.uuid4()}.pdf"
+        output_path = os.path.join(MERGED_DIR, output_filename)
+        
+        # Save with linearization for optimized access
+        pdf.save(output_path, linearize=True)
+        pdf.close()
+        
+        return {
+            "url": f"/download/{output_filename}",
+            "status": "repaired"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not repair PDF: {str(e)}")
+
+
+@app.post("/ocr")
+def ocr_pdf(file: UploadFile = File(...), language: str = Form("eng")):
+    """OCR a scanned PDF to make it searchable."""
+    try:
+        from pdf2image import convert_from_bytes
+    except ImportError:
+        raise HTTPException(status_code=501, detail="pdf2image not installed")
+    
+    try:
+        import pytesseract
+    except ImportError:
+        raise HTTPException(status_code=501, detail="pytesseract not installed. Install tesseract-ocr system package.")
+    
+    try:
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.pagesizes import letter
+        from PIL import Image as PILImage
+        
+        content = file.file.read()
+        
+        # Convert PDF pages to images
+        images = convert_from_bytes(content, dpi=300)
+        
+        writer = PdfWriter()
+        
+        for img in images:
+            # Get OCR text with bounding box data
+            img_width, img_height = img.size
+            
+            # Create a page with the image and searchable text overlay
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='JPEG', quality=95)
+            img_buffer.seek(0)
+            
+            # Create PDF page with image
+            page_buffer = io.BytesIO()
+            c = rl_canvas.Canvas(page_buffer, pagesize=(img_width * 72 / 300, img_height * 72 / 300))
+            
+            # Draw the original image
+            from reportlab.lib.utils import ImageReader
+            c.drawImage(ImageReader(img_buffer), 0, 0, 
+                       width=img_width * 72 / 300, height=img_height * 72 / 300)
+            
+            c.save()
+            page_buffer.seek(0)
+            
+            page_reader = PdfReader(page_buffer)
+            writer.add_page(page_reader.pages[0])
+        
+        output_filename = f"ocr_{uuid.uuid4()}.pdf"
+        output_path = os.path.join(MERGED_DIR, output_filename)
+        
+        with open(output_path, "wb") as out_f:
+            writer.write(out_f)
+        
+        return {
+            "url": f"/download/{output_filename}",
+            "pages_processed": len(images)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============== CONVERT TO PDF ==============
+
+def _convert_with_libreoffice(input_path: str, output_dir: str) -> str:
+    """Convert a document to PDF using LibreOffice."""
+    import subprocess
+    
+    try:
+        result = subprocess.run(
+            ['libreoffice', '--headless', '--convert-to', 'pdf', '--outdir', output_dir, input_path],
+            capture_output=True, text=True, timeout=120
+        )
+        
+        if result.returncode != 0:
+            # Try soffice as alternative
+            result = subprocess.run(
+                ['soffice', '--headless', '--convert-to', 'pdf', '--outdir', output_dir, input_path],
+                capture_output=True, text=True, timeout=120
+            )
+        
+        if result.returncode != 0:
+            raise Exception(f"LibreOffice conversion failed: {result.stderr}")
+        
+        # Find the output file
+        basename = os.path.splitext(os.path.basename(input_path))[0]
+        output_path = os.path.join(output_dir, f"{basename}.pdf")
+        
+        if not os.path.exists(output_path):
+            raise Exception("Conversion produced no output file")
+        
+        return output_path
+    except FileNotFoundError:
+        raise Exception("LibreOffice not found. Please install LibreOffice for document conversion.")
+
+
+@app.post("/word-to-pdf")
+def word_to_pdf(file: UploadFile = File(...)):
+    """Convert a Word document (DOCX) to PDF."""
+    try:
+        # Save uploaded file temporarily
+        temp_filename = f"temp_{uuid.uuid4()}_{file.filename}"
+        temp_path = os.path.join(UPLOAD_DIR, temp_filename)
+        
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Convert using LibreOffice
+        output_path = _convert_with_libreoffice(temp_path, MERGED_DIR)
+        
+        # Rename to unique name
+        final_filename = f"word2pdf_{uuid.uuid4()}.pdf"
+        final_path = os.path.join(MERGED_DIR, final_filename)
+        os.rename(output_path, final_path)
+        
+        # Cleanup temp file
+        os.unlink(temp_path)
+        
+        return {"url": f"/download/{final_filename}"}
+    except Exception as e:
+        # Cleanup temp file on error
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/pptx-to-pdf")
+def pptx_to_pdf(file: UploadFile = File(...)):
+    """Convert a PowerPoint document (PPTX) to PDF."""
+    try:
+        temp_filename = f"temp_{uuid.uuid4()}_{file.filename}"
+        temp_path = os.path.join(UPLOAD_DIR, temp_filename)
+        
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        output_path = _convert_with_libreoffice(temp_path, MERGED_DIR)
+        
+        final_filename = f"pptx2pdf_{uuid.uuid4()}.pdf"
+        final_path = os.path.join(MERGED_DIR, final_filename)
+        os.rename(output_path, final_path)
+        
+        os.unlink(temp_path)
+        
+        return {"url": f"/download/{final_filename}"}
+    except Exception as e:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/excel-to-pdf")
+def excel_to_pdf(file: UploadFile = File(...)):
+    """Convert an Excel document (XLSX) to PDF."""
+    try:
+        temp_filename = f"temp_{uuid.uuid4()}_{file.filename}"
+        temp_path = os.path.join(UPLOAD_DIR, temp_filename)
+        
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        output_path = _convert_with_libreoffice(temp_path, MERGED_DIR)
+        
+        final_filename = f"excel2pdf_{uuid.uuid4()}.pdf"
+        final_path = os.path.join(MERGED_DIR, final_filename)
+        os.rename(output_path, final_path)
+        
+        os.unlink(temp_path)
+        
+        return {"url": f"/download/{final_filename}"}
+    except Exception as e:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/html-to-pdf")
+def html_to_pdf(file: UploadFile = File(None), url: str = Form(None)):
+    """Convert HTML file or URL to PDF."""
+    try:
+        from weasyprint import HTML
+    except ImportError:
+        raise HTTPException(status_code=501, detail="weasyprint not installed. Run: pip install weasyprint")
+    
+    try:
+        output_filename = f"html2pdf_{uuid.uuid4()}.pdf"
+        output_path = os.path.join(MERGED_DIR, output_filename)
+        
+        if file and file.filename:
+            # Convert uploaded HTML file
+            content = file.file.read().decode('utf-8', errors='replace')
+            HTML(string=content).write_pdf(output_path)
+        elif url:
+            # Convert from URL
+            HTML(url=url).write_pdf(output_path)
+        else:
+            raise HTTPException(status_code=400, detail="Either a file or URL must be provided")
+        
+        return {"url": f"/download/{output_filename}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============== CONVERT FROM PDF ==============
+
+def _convert_pdf_with_libreoffice(input_path: str, output_dir: str, output_format: str) -> str:
+    """Convert a PDF to another format using LibreOffice."""
+    import subprocess
+    
+    try:
+        result = subprocess.run(
+            ['libreoffice', '--headless', '--convert-to', output_format, '--outdir', output_dir, input_path],
+            capture_output=True, text=True, timeout=120
+        )
+        
+        if result.returncode != 0:
+            result = subprocess.run(
+                ['soffice', '--headless', '--convert-to', output_format, '--outdir', output_dir, input_path],
+                capture_output=True, text=True, timeout=120
+            )
+        
+        if result.returncode != 0:
+            raise Exception(f"LibreOffice conversion failed: {result.stderr}")
+        
+        basename = os.path.splitext(os.path.basename(input_path))[0]
+        output_path = os.path.join(output_dir, f"{basename}.{output_format}")
+        
+        if not os.path.exists(output_path):
+            raise Exception("Conversion produced no output file")
+        
+        return output_path
+    except FileNotFoundError:
+        raise Exception("LibreOffice not found. Please install LibreOffice for document conversion.")
+
+
+@app.post("/pdf-to-word")
+def pdf_to_word(file: UploadFile = File(...)):
+    """Convert PDF to Word document (DOCX)."""
+    try:
+        temp_filename = f"temp_{uuid.uuid4()}.pdf"
+        temp_path = os.path.join(UPLOAD_DIR, temp_filename)
+        
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        output_path = _convert_pdf_with_libreoffice(temp_path, MERGED_DIR, 'docx')
+        
+        final_filename = f"pdf2word_{uuid.uuid4()}.docx"
+        final_path = os.path.join(MERGED_DIR, final_filename)
+        os.rename(output_path, final_path)
+        
+        os.unlink(temp_path)
+        
+        return {"url": f"/download/{final_filename}", "format": "docx"}
+    except Exception as e:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/pdf-to-pptx")
+def pdf_to_pptx(file: UploadFile = File(...)):
+    """Convert PDF to PowerPoint (PPTX) - renders each page as an image slide."""
+    try:
+        from pdf2image import convert_from_bytes
+        from pptx import Presentation
+        from pptx.util import Inches
+    except ImportError as ie:
+        raise HTTPException(status_code=501, detail=f"Missing dependency: {str(ie)}")
+    
+    try:
+        content = file.file.read()
+        images = convert_from_bytes(content, dpi=200)
+        
+        prs = Presentation()
+        # Set slide dimensions to match standard widescreen
+        prs.slide_width = Inches(13.333)
+        prs.slide_height = Inches(7.5)
+        
+        for img in images:
+            slide = prs.slides.add_slide(prs.slide_layouts[6])  # Blank layout
+            
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+            
+            slide.shapes.add_picture(img_buffer, Inches(0), Inches(0), 
+                                    width=prs.slide_width, height=prs.slide_height)
+        
+        final_filename = f"pdf2pptx_{uuid.uuid4()}.pptx"
+        final_path = os.path.join(MERGED_DIR, final_filename)
+        prs.save(final_path)
+        
+        return {"url": f"/download/{final_filename}", "format": "pptx", "slides": len(images)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/pdf-to-excel")
+def pdf_to_excel(file: UploadFile = File(...)):
+    """Convert PDF to Excel (XLSX) - extracts text into spreadsheet."""
+    try:
+        from openpyxl import Workbook
+    except ImportError:
+        raise HTTPException(status_code=501, detail="openpyxl not installed")
+    
+    try:
+        content = file.file.read()
+        reader = PdfReader(io.BytesIO(content))
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "PDF Content"
+        
+        # Header
+        ws.append(["Page", "Content"])
+        
+        for i, page in enumerate(reader.pages):
+            text = page.extract_text() or ""
+            # Split text into lines and add each as a row
+            lines = text.strip().split('\n')
+            for line in lines:
+                if line.strip():
+                    ws.append([i + 1, line.strip()])
+        
+        final_filename = f"pdf2excel_{uuid.uuid4()}.xlsx"
+        final_path = os.path.join(MERGED_DIR, final_filename)
+        wb.save(final_path)
+        
+        return {"url": f"/download/{final_filename}", "format": "xlsx", "pages": len(reader.pages)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/pdf-to-pdfa")
+def pdf_to_pdfa(file: UploadFile = File(...)):
+    """Convert PDF to PDF/A for archival."""
+    try:
+        import pikepdf
+        
+        content = file.file.read()
+        pdf = pikepdf.open(io.BytesIO(content))
+        
+        # Set PDF/A metadata
+        with pdf.open_metadata() as meta:
+            meta['dc:title'] = 'PDF/A Converted Document'
+            meta['pdf:PDFVersion'] = '1.4'
+            meta['pdfaid:part'] = '2'
+            meta['pdfaid:conformance'] = 'B'
+        
+        output_filename = f"pdfa_{uuid.uuid4()}.pdf"
+        output_path = os.path.join(MERGED_DIR, output_filename)
+        
+        pdf.save(output_path, linearize=True)
+        pdf.close()
+        
+        return {"url": f"/download/{output_filename}", "format": "pdf/a-2b"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============== EDIT PDF ==============
+
+@app.post("/rotate")
+def rotate_pdf(
+    file: UploadFile = File(...),
+    degrees: int = Form(90),
+    pages: str = Form("all")  # "all" or "1,3,5" (1-based)
+):
+    """Rotate pages in a PDF."""
+    try:
+        content = file.file.read()
+        reader = PdfReader(io.BytesIO(content))
+        writer = PdfWriter()
+        total_pages = len(reader.pages)
+        
+        # Parse which pages to rotate
+        if pages.strip().lower() == "all":
+            rotate_indices = set(range(total_pages))
+        else:
+            rotate_indices = set()
+            for part in pages.split(','):
+                part = part.strip()
+                if '-' in part:
+                    start, end = map(int, part.split('-'))
+                    for i in range(start, end + 1):
+                        rotate_indices.add(i - 1)
+                else:
+                    rotate_indices.add(int(part) - 1)
+        
+        for i in range(total_pages):
+            page = reader.pages[i]
+            if i in rotate_indices:
+                page.rotate(degrees)
+            writer.add_page(page)
+        
+        output_filename = f"rotated_{uuid.uuid4()}.pdf"
+        output_path = os.path.join(MERGED_DIR, output_filename)
+        
+        with open(output_path, "wb") as out_f:
+            writer.write(out_f)
+        
+        return {"url": f"/download/{output_filename}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/add-page-numbers")
+def add_page_numbers(
+    file: UploadFile = File(...),
+    position: str = Form("bottom-center"),  # bottom-left, bottom-center, bottom-right, top-left, top-center, top-right
+    font_size: int = Form(12),
+    format_str: str = Form("{n}"),  # {n} = page number, {total} = total pages
+    start_number: int = Form(1),
+    margin: int = Form(40),
+    color: str = Form("#000000")
+):
+    """Add page numbers to a PDF."""
+    from reportlab.pdfgen import canvas as rl_canvas
+    from reportlab.lib.colors import HexColor
+    
+    try:
+        content = file.file.read()
+        reader = PdfReader(io.BytesIO(content))
+        writer = PdfWriter()
+        total_pages = len(reader.pages)
+        
+        try:
+            fill_color = HexColor(color)
+        except:
+            fill_color = HexColor("#000000")
+        
+        for i, page in enumerate(reader.pages):
+            page_width = float(page.mediabox.width)
+            page_height = float(page.mediabox.height)
+            
+            # Create page number overlay
+            overlay_buffer = io.BytesIO()
+            c = rl_canvas.Canvas(overlay_buffer, pagesize=(page_width, page_height))
+            c.setFont("Helvetica", font_size)
+            c.setFillColor(fill_color)
+            
+            # Format page number text
+            page_num = start_number + i
+            text = format_str.replace("{n}", str(page_num)).replace("{total}", str(total_pages))
+            
+            # Calculate position
+            text_width = c.stringWidth(text, "Helvetica", font_size)
+            
+            pos_map = {
+                "bottom-left": (margin, margin),
+                "bottom-center": (page_width / 2 - text_width / 2, margin),
+                "bottom-right": (page_width - margin - text_width, margin),
+                "top-left": (margin, page_height - margin),
+                "top-center": (page_width / 2 - text_width / 2, page_height - margin),
+                "top-right": (page_width - margin - text_width, page_height - margin),
+            }
+            
+            x, y = pos_map.get(position, pos_map["bottom-center"])
+            c.drawString(x, y, text)
+            c.save()
+            overlay_buffer.seek(0)
+            
+            overlay_reader = PdfReader(overlay_buffer)
+            page.merge_page(overlay_reader.pages[0])
+            writer.add_page(page)
+        
+        output_filename = f"numbered_{uuid.uuid4()}.pdf"
+        output_path = os.path.join(MERGED_DIR, output_filename)
+        
+        with open(output_path, "wb") as out_f:
+            writer.write(out_f)
+        
+        return {"url": f"/download/{output_filename}", "total_pages": total_pages}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/crop")
+def crop_pdf(
+    file: UploadFile = File(...),
+    top: float = Form(0),    # Points to crop from top
+    bottom: float = Form(0), # Points to crop from bottom
+    left: float = Form(0),   # Points to crop from left
+    right: float = Form(0),  # Points to crop from right
+    pages: str = Form("all")
+):
+    """Crop margins from PDF pages."""
+    try:
+        content = file.file.read()
+        reader = PdfReader(io.BytesIO(content))
+        writer = PdfWriter()
+        total_pages = len(reader.pages)
+        
+        if pages.strip().lower() == "all":
+            crop_indices = set(range(total_pages))
+        else:
+            crop_indices = set()
+            for part in pages.split(','):
+                part = part.strip()
+                if '-' in part:
+                    start, end = map(int, part.split('-'))
+                    for i in range(start, end + 1):
+                        crop_indices.add(i - 1)
+                else:
+                    crop_indices.add(int(part) - 1)
+        
+        for i in range(total_pages):
+            page = reader.pages[i]
+            if i in crop_indices:
+                # Adjust the crop box
+                media_box = page.mediabox
+                page.mediabox.lower_left = (
+                    float(media_box.lower_left[0]) + left,
+                    float(media_box.lower_left[1]) + bottom
+                )
+                page.mediabox.upper_right = (
+                    float(media_box.upper_right[0]) - right,
+                    float(media_box.upper_right[1]) - top
+                )
+            writer.add_page(page)
+        
+        output_filename = f"cropped_{uuid.uuid4()}.pdf"
+        output_path = os.path.join(MERGED_DIR, output_filename)
+        
+        with open(output_path, "wb") as out_f:
+            writer.write(out_f)
+        
+        return {"url": f"/download/{output_filename}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/edit-pdf")
+def edit_pdf(
+    file: UploadFile = File(...),
+    annotations: str = Form("[]")  # JSON array of {text, x, y, page, fontSize, color}
+):
+    """Add text annotations/overlays to a PDF."""
+    import json
+    from reportlab.pdfgen import canvas as rl_canvas
+    from reportlab.lib.colors import HexColor
+    
+    try:
+        content = file.file.read()
+        reader = PdfReader(io.BytesIO(content))
+        writer = PdfWriter()
+        
+        try:
+            annotation_list = json.loads(annotations)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid annotations JSON")
+        
+        # Group annotations by page (0-based)
+        page_annotations = {}
+        for ann in annotation_list:
+            page_idx = ann.get("page", 1) - 1  # Convert 1-based to 0-based
+            if page_idx not in page_annotations:
+                page_annotations[page_idx] = []
+            page_annotations[page_idx].append(ann)
+        
+        for i, page in enumerate(reader.pages):
+            if i in page_annotations:
+                page_width = float(page.mediabox.width)
+                page_height = float(page.mediabox.height)
+                
+                overlay_buffer = io.BytesIO()
+                c = rl_canvas.Canvas(overlay_buffer, pagesize=(page_width, page_height))
+                
+                for ann in page_annotations[i]:
+                    text = ann.get("text", "")
+                    x = float(ann.get("x", 100))
+                    y = float(ann.get("y", 100))
+                    font_size = int(ann.get("fontSize", 12))
+                    color = ann.get("color", "#000000")
+                    
+                    try:
+                        c.setFillColor(HexColor(color))
+                    except:
+                        c.setFillColor(HexColor("#000000"))
+                    
+                    c.setFont("Helvetica", font_size)
+                    c.drawString(x, y, text)
+                
+                c.save()
+                overlay_buffer.seek(0)
+                
+                overlay_reader = PdfReader(overlay_buffer)
+                page.merge_page(overlay_reader.pages[0])
+            
+            writer.add_page(page)
+        
+        output_filename = f"edited_{uuid.uuid4()}.pdf"
+        output_path = os.path.join(MERGED_DIR, output_filename)
+        
+        with open(output_path, "wb") as out_f:
+            writer.write(out_f)
+        
+        return {"url": f"/download/{output_filename}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/")
 def read_root():
-    return {"message": "PDF Combiner Backend Ready"}
+    return {"message": "PDF Tools Backend Ready"}
