@@ -242,7 +242,6 @@ async def download_file(filename: str):
 @app.post("/images-to-pdf")
 def images_to_pdf(files: List[UploadFile] = File(...)):
     """Convert multiple images to a single PDF."""
-    import img2pdf
     from PIL import Image
     import io
     
@@ -250,32 +249,34 @@ def images_to_pdf(files: List[UploadFile] = File(...)):
         raise HTTPException(status_code=400, detail="No images provided")
     
     try:
-        image_bytes_list = []
+        pil_images = []
         for f in files:
             content = f.file.read()
-            # Validate it's an image
             try:
                 img = Image.open(io.BytesIO(content))
-                # Convert RGBA to RGB if needed (img2pdf doesn't support RGBA)
-                if img.mode in ('RGBA', 'P'):
+                # Convert any mode to RGB for PDF compatibility
+                if img.mode != 'RGB':
                     img = img.convert('RGB')
-                    buf = io.BytesIO()
-                    img.save(buf, format='JPEG', quality=95)
-                    content = buf.getvalue()
-                image_bytes_list.append(content)
+                pil_images.append(img)
             except Exception:
                 raise HTTPException(status_code=400, detail=f"Invalid image file: {f.filename}")
         
-        # Convert to PDF
-        pdf_bytes = img2pdf.convert(image_bytes_list)
+        if not pil_images:
+            raise HTTPException(status_code=400, detail="No valid images found")
         
         output_filename = f"images_{uuid.uuid4()}.pdf"
         output_path = os.path.join(MERGED_DIR, output_filename)
         
-        with open(output_path, "wb") as out_f:
-            out_f.write(pdf_bytes)
+        # Save first image as PDF, append the rest
+        first_img = pil_images[0]
+        if len(pil_images) > 1:
+            first_img.save(output_path, "PDF", save_all=True, append_images=pil_images[1:], resolution=150)
+        else:
+            first_img.save(output_path, "PDF", resolution=150)
         
         return {"url": f"/download/{output_filename}"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

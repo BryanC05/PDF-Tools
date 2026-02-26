@@ -83,7 +83,7 @@ export function ImageToPdfModal({ isOpen, onClose }: ImageToPdfModalProps) {
                         <div className="flex items-center justify-between p-4 border-b border-gray-100">
                             <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                                 <Image className="w-5 h-5 text-green-500" />
-                                Images to PDF
+                                JPG to PDF
                             </h3>
                             <button onClick={handleClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
                                 <X className="w-5 h-5" />
