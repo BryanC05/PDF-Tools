@@ -3,6 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { FileDown, Upload, Loader2, Download, X, TrendingDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { API_URL } from '../lib/config';
 
 interface CompressModalProps {
     isOpen: boolean;
@@ -42,9 +43,9 @@ export function CompressModal({ isOpen, onClose }: CompressModalProps) {
             const formData = new FormData();
             formData.append('file', pdfFile);
 
-            const response = await axios.post('http://localhost:8000/compress', formData);
+            const response = await axios.post(`${API_URL}/compress`, formData);
             setResult({
-                url: `http://localhost:8000${response.data.url}`,
+                url: `${API_URL}${response.data.url}`,
                 original_size: response.data.original_size,
                 compressed_size: response.data.compressed_size,
                 reduction_percent: response.data.reduction_percent

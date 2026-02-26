@@ -3,6 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { Lock, Upload, Loader2, Download, X, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { API_URL } from '../lib/config';
 
 interface ProtectModalProps {
     isOpen: boolean;
@@ -40,8 +41,8 @@ export function ProtectModal({ isOpen, onClose }: ProtectModalProps) {
             formData.append('file', pdfFile);
             formData.append('password', password);
 
-            const response = await axios.post('http://localhost:8000/protect', formData);
-            setResultUrl(`http://localhost:8000${response.data.url}`);
+            const response = await axios.post(`${API_URL}/protect`, formData);
+            setResultUrl(`${API_URL}${response.data.url}`);
         } catch (error) {
             console.error('Protection failed', error);
             alert('Failed to protect PDF.');

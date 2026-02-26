@@ -3,6 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { Stamp, Upload, Loader2, Download, X, RotateCw, Grid3X3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { API_URL } from '../lib/config';
 
 interface WatermarkModalProps {
     isOpen: boolean;
@@ -71,8 +72,8 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
             formData.append('repeat_x', repeatX.toString());
             formData.append('repeat_y', repeatY.toString());
 
-            const response = await axios.post('http://localhost:8000/watermark', formData);
-            setResultUrl(`http://localhost:8000${response.data.url}`);
+            const response = await axios.post(`${API_URL}/watermark`, formData);
+            setResultUrl(`${API_URL}${response.data.url}`);
         } catch (error) {
             console.error('Watermarking failed', error);
             alert('Failed to add watermark.');
