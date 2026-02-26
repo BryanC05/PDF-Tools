@@ -45,6 +45,7 @@ A powerful, open-source web application for manipulating PDF files. Merge, split
    ```
 
 2. **Backend Setup**
+   The backend requires LibreOffice, Tesseract OCR, and Poppler to be installed on your system for all features to work (or use the provided Dockerfile).
    ```bash
    cd backend
    python -m venv venv
@@ -54,9 +55,8 @@ A powerful, open-source web application for manipulating PDF files. Merge, split
    # source venv/bin/activate
    
    pip install -r requirements.txt
-   python -m uvicorn main:app --reload
+   python main.py # Runs on http://localhost:8000
    ```
-   Backend will run at `http://localhost:8000`.
 
 3. **Frontend Setup**
    ```bash
