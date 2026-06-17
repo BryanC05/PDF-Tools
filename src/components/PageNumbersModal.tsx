@@ -1,6 +1,6 @@
 export interface PageNumbersModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function PageNumbersModal(_props: PageNumbersModalProps) {

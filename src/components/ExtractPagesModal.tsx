@@ -1,6 +1,6 @@
 export interface ExtractPagesModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function ExtractPagesModal(_props: ExtractPagesModalProps) {

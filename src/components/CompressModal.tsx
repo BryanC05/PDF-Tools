@@ -1,6 +1,6 @@
 export interface CompressModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function CompressModal(_props: CompressModalProps) {

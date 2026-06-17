@@ -1,6 +1,6 @@
 export interface GrayscaleModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function GrayscaleModal(_props: GrayscaleModalProps) {

@@ -1,8 +1,10 @@
 export interface SplitterModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  file?: File;
+  onClose: () => void;
+  onSplitComplete?: (url: any) => void;
 }
 
-export function SplitterModal({ open, onOpenChange }: SplitterModalProps) {
+export function SplitterModal(_props: SplitterModalProps) {
   return null;
 }

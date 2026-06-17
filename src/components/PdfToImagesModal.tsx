@@ -1,6 +1,6 @@
 export interface PdfToImagesModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function PdfToImagesModal(_props: PdfToImagesModalProps) {

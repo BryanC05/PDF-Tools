@@ -1,6 +1,8 @@
 export interface PageOrganizerModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  file?: File;
+  onClose: () => void;
+  onOrganizeComplete?: (updatedFile: any) => void;
 }
 
 export function PageOrganizerModal(_props: PageOrganizerModalProps) {
