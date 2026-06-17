@@ -1,77 +1,94 @@
-# Simple PDF 📄✂️
+# PDF-Tools - Simple PDF Manipulation Suite
 
-A powerful, open-source web application for manipulating PDF files. Merge, split, organize, compress, and more - all in your browser with a privacy-focused backend.
+A comprehensive client-side PDF manipulation suite with merge, split, OCR, conversion, and editing capabilities.
 
-![Simple PDF Screenshot](frontend/src/assets/react.svg) <!-- Replace with actual screenshot later -->
+## Overview
 
-## Features 🚀
+PDF-Tools provides a complete offline PDF toolkit with features like:
+- Merge, split, and organize PDF files
+- OCR PDF and image processing
+- Format conversion (JPG to PDF, PDF to JPG, PDF to PDF/A)
+- PDF editing (rotate, crop, add watermarks, fill forms)
+- Image to PDF and PDF to image conversion
+- PDF protection and encryption
 
-- **Merge PDFs**: Combine multiple PDF files into one.
-- **Split PDF**: Extract specific pages or ranges from a PDF.
-- **Organize Pages**: Reorder, rotate, or delete pages using a drag-and-drop interface.
-- **Images to PDF**: Convert JPG/PNG images into a single PDF document.
-- **PDF to Images**: Convert PDF pages into high-quality images (ZIP download).
-- **Compress PDF**: Reduce file size while maintaining quality.
-- **Protect PDF**: Encrypt your PDF with a password.
-- **Watermark**: Add customizable text watermarks to every page.
+All processing happens client-side in the browser. Your files never leave your device.
 
-## Tech Stack 🛠️
+## Technologies
 
-### Frontend
-- **React** (Vite)
-- **TypeScript**
-- **Tailwind CSS** (Styling)
-- **Framer Motion** (Animations)
-- **dnd-kit** (Drag and drop interactions)
+Built with React + TypeScript + Vite for optimal performance and type safety.
 
-### Backend
-- **Python** (FastAPI)
-- **pypdf** (PDF manipulation)
-- **img2pdf** & **Pillow** (Image processing)
-- **ReportLab** (Watermarking)
+## Key Features
 
-## Getting Started 🏁
+### Organize PDF
+- Merge multiple PDFs
+- Split PDF pages
+- Remove PDF pages
+- Extract PDF pages
+- Organize PDF page order
+- Scan images to PDF
 
-### Prerequisites
-- Node.js (v18+)
-- Python (v3.9+)
+### Optimize PDF
+- Compress PDF files
+- Repair corrupted PDFs
+- OCR (Optical Character Recognition)
+- Convert to grayscale
 
-### Installation
+### Convert to PDF
+- JPG to PDF conversion
 
-1. **Clone the repository**
+### Convert from PDF
+- PDF to JPG conversion
+- PDF to PDF/A conversion
+
+### Edit PDF
+- Rotate PDF pages
+- Add page numbers
+- Add watermarks
+- Crop PDF pages
+- Edit PDF content
+- Sign PDF documents
+- Edit PDF metadata
+- Fill PDF forms
+
+## Usage
+
+1. Install dependencies:
    ```bash
-   git clone https://github.com/BryanC05/PDF-Tools.git
-   cd PDF-Tools
-   ```
-
-2. **Backend Setup**
-   The backend requires LibreOffice, Tesseract OCR, and Poppler to be installed on your system for all features to work (or use the provided Dockerfile).
-   ```bash
-   cd backend
-   python -m venv venv
-   # Windows
-   venv\Scripts\activate
-   # Mac/Linux
-   # source venv/bin/activate
-   
-   pip install -r requirements.txt
-   python main.py # Runs on http://localhost:8000
-   ```
-
-3. **Frontend Setup**
-   ```bash
-   cd frontend
    npm install
+   ```
+
+2. Start the development server:
+   ```bash
    npm run dev
    ```
-   Frontend will run at `http://localhost:5173`.
 
-## Deployment 🌍
+3. Build for production:
+   ```bash
+   npm run build
+   ```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions on deploying to Vercel (Frontend) and Railway (Backend).
+## Development
 
-## Contributing 🤝
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+This project uses a grid-based layout for the tool categories:
+- Mobile: 1 column
+- Tablet: 2 columns
+- Desktop: 3 columns
+- Large Desktop: 3 columns
 
-## License 📄
-[MIT](https://choosealicense.com/licenses/mit/)
+The layout ensures better distribution of categories, especially those with fewer features, reducing visual gaps and improving the user experience.
+
+## Signature Drawing Improvements
+
+The signature drawing feature has been enhanced with:
+- Device pixel ratio scaling for retina displays
+- Unified mouse and touch event handling
+- Precise coordinate calculation and rounding
+- Touch action prevention for better mobile experience
+- Free movement and resizing capabilities
+
+## License
+
+This project is built as a demonstration of modern web development practices using React, TypeScript, and Vite.
+
+> **Note:** This project focuses on demonstrating advanced web development techniques including responsive design, type safety, and client-side processing of PDF files.
