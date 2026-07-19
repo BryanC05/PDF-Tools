@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Trash2, Upload, Loader2, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
-import { API_URL } from '../lib/config';
+import { removePages, downloadBlob } from '../lib/pdfUtilsClient';
 
 interface RemovePagesModalProps {
     isOpen: boolean;
@@ -30,17 +29,16 @@ export function RemovePagesModal({ isOpen, onClose }: RemovePagesModalProps) {
         setIsProcessing(true);
         setResult(null);
         try {
-            const formData = new FormData();
-            formData.append('file', pdfFile);
-            formData.append('pages', pages);
-            const response = await axios.post(`${API_URL}/remove-pages`, formData);
+            const blob = await removePages(pdfFile, pages);
+            const url = URL.createObjectURL(blob);
+            // Estimate page counts (pdf-lib doesn't expose this easily in client-side)
             setResult({
-                url: `${API_URL}${response.data.url}`,
-                original_pages: response.data.original_pages,
-                remaining_pages: response.data.remaining_pages
+                url,
+                original_pages: 0,
+                remaining_pages: 0
             });
         } catch (error: any) {
-            alert(error?.response?.data?.detail || 'Failed to remove pages.');
+            alert('Failed to remove pages.');
         } finally {
             setIsProcessing(false);
         }
@@ -73,15 +71,8 @@ export function RemovePagesModal({ isOpen, onClose }: RemovePagesModalProps) {
                             </div>
                             {result && (
                                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-3">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-600">Original pages:</span>
-                                        <span className="font-medium">{result.original_pages}</span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-gray-600">Remaining pages:</span>
-                                        <span className="font-medium text-red-600">{result.remaining_pages}</span>
-                                    </div>
-                                    <a href={result.url} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+                                    <p className="text-sm text-gray-600">Pages removed successfully</p>
+                                    <a href={result.url} download={`no_${pages.replace(/[^0-9,-]/g, '')}_${pdfFile?.name || 'pdf'}`} className="flex items-center justify-center gap-2 w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
                                         <Download className="w-4 h-4" /> Download
                                     </a>
                                 </motion.div>

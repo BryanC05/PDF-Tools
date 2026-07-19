@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { RotateCw, Upload, Loader2, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
-import { API_URL } from '../lib/config';
+import { rotatePdf, downloadBlob } from '../lib/pdfUtilsClient';
 
 interface RotateModalProps {
     isOpen: boolean;
@@ -31,14 +30,12 @@ export function RotateModal({ isOpen, onClose }: RotateModalProps) {
         setIsProcessing(true);
         setResultUrl(null);
         try {
-            const formData = new FormData();
-            formData.append('file', pdfFile);
-            formData.append('degrees', degrees.toString());
-            formData.append('pages', pages);
-            const response = await axios.post(`${API_URL}/rotate`, formData);
-            setResultUrl(`${API_URL}${response.data.url}`);
+            const pagesParam = pages === 'all' ? undefined : pages;
+            const blob = await rotatePdf(pdfFile, degrees, pagesParam);
+            const url = URL.createObjectURL(blob);
+            setResultUrl(url);
         } catch (error: any) {
-            alert(error?.response?.data?.detail || 'Failed to rotate PDF.');
+            alert('Failed to rotate PDF.');
         } finally {
             setIsProcessing(false);
         }
@@ -82,7 +79,7 @@ export function RotateModal({ isOpen, onClose }: RotateModalProps) {
                             </div>
                             {resultUrl && (
                                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-teal-50 border border-teal-200 rounded-xl">
-                                    <a href={resultUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium">
+                                    <a href={resultUrl} download={`rotated_${pdfFile?.name || 'pdf'}`} className="flex items-center justify-center gap-2 w-full py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium">
                                         <Download className="w-4 h-4" /> Download Rotated PDF
                                     </a>
                                 </motion.div>

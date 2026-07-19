@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FileOutput, Upload, Loader2, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
-import { API_URL } from '../lib/config';
+import { extractPages, downloadBlob } from '../lib/pdfUtilsClient';
 
 interface ExtractPagesModalProps {
     isOpen: boolean;
@@ -30,13 +29,11 @@ export function ExtractPagesModal({ isOpen, onClose }: ExtractPagesModalProps) {
         setIsProcessing(true);
         setResult(null);
         try {
-            const formData = new FormData();
-            formData.append('file', pdfFile);
-            formData.append('pages', pages);
-            const response = await axios.post(`${API_URL}/extract-pages`, formData);
-            setResult({ url: `${API_URL}${response.data.url}`, extracted_pages: response.data.extracted_pages });
+            const blob = await extractPages(pdfFile, pages);
+            const url = URL.createObjectURL(blob);
+            setResult({ url, extracted_pages: 0 });
         } catch (error: any) {
-            alert(error?.response?.data?.detail || 'Failed to extract pages.');
+            alert('Failed to extract pages.');
         } finally {
             setIsProcessing(false);
         }
@@ -69,8 +66,8 @@ export function ExtractPagesModal({ isOpen, onClose }: ExtractPagesModalProps) {
                             </div>
                             {result && (
                                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3">
-                                    <p className="text-sm text-gray-600">Extracted <span className="font-medium text-indigo-600">{result.extracted_pages}</span> pages</p>
-                                    <a href={result.url} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+                                    <p className="text-sm text-gray-600">Pages extracted successfully</p>
+                                    <a href={result.url} download={`extract_${pages.replace(/[^0-9,-]/g, '')}_${pdfFile?.name || 'pdf'}`} className="flex items-center justify-center gap-2 w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
                                         <Download className="w-4 h-4" /> Download
                                     </a>
                                 </motion.div>

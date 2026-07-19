@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Dropzone } from './components/Dropzone';
 import { FileList } from './components/FileList';
 import { SplitterModal } from './components/SplitterModal';
@@ -33,12 +33,7 @@ import {
   RotateCw, Hash, Stamp, Crop, Pencil,
   type LucideIcon
 } from 'lucide-react';
-import axios from 'axios';
 import { motion } from 'framer-motion';
-import { API_URL } from './lib/config';
-
-// Generate a unique session ID
-const generateSessionId = () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 interface FileItem {
   id: string;
@@ -66,9 +61,6 @@ function App() {
   const [mergedUrl, setMergedUrl] = useState<string | null>(null);
   const [showMergeSection, setShowMergeSection] = useState(false);
 
-  // Session ID for file cleanup
-  const sessionIdRef = useRef<string>(generateSessionId());
-
   // Modals State
   const [splittingFile, setSplittingFile] = useState<FileItem | null>(null);
   const [organizingFile, setOrganizingFile] = useState<FileItem | null>(null);
@@ -94,49 +86,28 @@ function App() {
   const [showPdfToExcel, setShowPdfToExcel] = useState(false);
   const [showPdfToPdfa, setShowPdfToPdfa] = useState(false);
 
-  // Cleanup files when user leaves the page
+  // Cleanup files when user leaves the page (client-side only)
   useEffect(() => {
     const cleanup = () => {
-      const filesToClean = files.map(f => f.original_name).filter(Boolean);
-      if (filesToClean.length > 0) {
-        const data = JSON.stringify({
-          session_id: sessionIdRef.current,
-          files: filesToClean
-        });
-        navigator.sendBeacon(`${API_URL}/cleanup`, new Blob([data], { type: 'application/json' }));
-      }
+      // Client-side: nothing to clean up on server
     };
 
     window.addEventListener('beforeunload', cleanup);
     return () => {
       window.removeEventListener('beforeunload', cleanup);
-      cleanup();
     };
   }, [files]);
 
   const handleFilesDropped = async (newFiles: File[]) => {
-    setIsUploading(true);
+    setIsUploading(false);
     setMergedUrl(null);
-    try {
-      const uploadPromises = newFiles.map(async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('session_id', sessionIdRef.current);
-        const response = await axios.post(`${API_URL}/upload`, formData);
-        return {
-          id: response.data.id,
-          name: file.name,
-          original_name: response.data.original_name
-        };
-      });
-      const uploadedFiles = await Promise.all(uploadPromises);
-      setFiles((prev) => [...prev, ...uploadedFiles]);
-    } catch (error) {
-      console.error("Upload failed", error);
-      alert("Failed to upload files. Ensure backend is running.");
-    } finally {
-      setIsUploading(false);
-    }
+    // Client-side: files stay in memory only
+    const uploadedFiles = newFiles.map((file) => ({
+      id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: file.name,
+      original_name: file.name
+    }));
+    setFiles((prev) => [...prev, ...uploadedFiles]);
   };
 
   const handleRemove = (id: string) => { setFiles((prev) => prev.filter((f) => f.id !== id)); setMergedUrl(null); };
@@ -148,9 +119,8 @@ function App() {
     if (files.length < 2) return;
     setIsMerging(true);
     try {
-      const payload = { files: files.map(f => f.original_name || f.id) };
-      const response = await axios.post(`${API_URL}/merge`, payload);
-      setMergedUrl(`${API_URL}${response.data.url}`);
+      // Client-side merge - files are now handled locally
+      alert("Client-side merge - use the MergePdfModal component for actual merge");
     } catch (error) {
       console.error("Merge failed", error);
       alert("Merge failed.");

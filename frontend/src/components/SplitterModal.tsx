@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Loader2, Scissors, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import { splitPdf, downloadAsZip } from '../lib/pdfUtilsClient';
 
 interface SplitterModalProps {
     filename: string;
@@ -11,21 +11,36 @@ interface SplitterModalProps {
     onSplitComplete: (url: string) => void;
 }
 
-// Configure Axios base URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
 export function SplitterModal({ filename, originalName, isOpen, onClose, onSplitComplete }: SplitterModalProps) {
     const [pageRanges, setPageRanges] = useState('');
     const [isSplitting, setIsSplitting] = useState(false);
+    const [pdfFile, setPdfFile] = useState<File | null>(null);
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && file.type === 'application/pdf') {
+            setPdfFile(file);
+        }
+    };
 
     const handleSplit = async () => {
+        if (!pdfFile) return;
         setIsSplitting(true);
         try {
-            const response = await axios.post(`${API_URL}/split`, {
-                filename: filename,
-                page_ranges: pageRanges
-            });
-            onSplitComplete(`${API_URL}${response.data.url}`);
+            const blobs = await splitPdf(pdfFile, pageRanges);
+            if (blobs.length === 1) {
+                // Single page - download directly
+                const url = URL.createObjectURL(blobs[0]);
+                onSplitComplete(url);
+            } else {
+                // Multiple pages - download as ZIP
+                const zipBlobs = blobs.map((blob, idx) => ({
+                    blob,
+                    name: `page_${idx + 1}.pdf`
+                }));
+                await downloadAsZip(zipBlobs, `${pdfFile.name.split('.')[0]}_split.zip`);
+                onSplitComplete('');
+            }
             onClose();
         } catch (error) {
             console.error("Split failed", error);
@@ -61,11 +76,19 @@ export function SplitterModal({ filename, originalName, isOpen, onClose, onSplit
                         <div className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Target File
+                                    Select PDF File
                                 </label>
-                                <div className="p-3 bg-gray-50 rounded-xl text-sm text-gray-600 font-mono truncate">
-                                    {originalName}
-                                </div>
+                                <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    onChange={handleFileSelect}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none transition-all"
+                                />
+                                {pdfFile && (
+                                    <div className="mt-2 p-3 bg-gray-50 rounded-xl text-sm text-gray-600 font-mono truncate">
+                                        {pdfFile.name}
+                                    </div>
+                                )}
                             </div>
 
                             <div>
@@ -87,7 +110,7 @@ export function SplitterModal({ filename, originalName, isOpen, onClose, onSplit
                             <div className="pt-2">
                                 <button
                                     onClick={handleSplit}
-                                    disabled={!pageRanges || isSplitting}
+                                    disabled={!pdfFile || !pageRanges || isSplitting}
                                     className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {isSplitting ? (
