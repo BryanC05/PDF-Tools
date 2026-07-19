@@ -38,7 +38,7 @@ export function RepairModal({ isOpen, onClose }: RepairModalProps) {
             const formData = new FormData();
             formData.append('file', pdfFile);
             
-            const blob = await callBackend('/repair-pdf', formData);
+            const blob = await callBackend('/repair', formData);
             const url = URL.createObjectURL(blob);
             setResultUrl(url);
         } catch (error) {

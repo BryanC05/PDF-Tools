@@ -40,7 +40,7 @@ export function CompressModal({ isOpen, onClose }: CompressModalProps) {
             formData.append('file', pdfFile);
             formData.append('compression_level', compressionLevel);
             
-            const blob = await callBackend('/compress-pdf', formData);
+            const blob = await callBackend('/compress', formData);
             const url = URL.createObjectURL(blob);
             setResultUrl(url);
         } catch (error) {
