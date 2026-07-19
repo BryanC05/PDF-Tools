@@ -8,11 +8,4 @@ export default defineConfig({
       '@': '/src',
     },
   },
-  build: {
-    rollupOptions: {
-      input: {
-        main: 'src/main.tsx',
-      },
-    },
-  },
 });
