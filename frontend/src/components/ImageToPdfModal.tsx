@@ -2,8 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Image, Upload, Loader2, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
-import { API_URL } from '../lib/config';
+import { imagesToPdf } from '../lib/pdfUtilsClient';
 
 interface ImageToPdfModalProps {
     isOpen: boolean;
@@ -49,11 +48,9 @@ export function ImageToPdfModal({ isOpen, onClose }: ImageToPdfModalProps) {
         setResultUrl(null);
 
         try {
-            const formData = new FormData();
-            images.forEach(img => formData.append('files', img));
-
-            const response = await axios.post(`${API_URL}/images-to-pdf`, formData);
-            setResultUrl(`${API_URL}${response.data.url}`);
+            const blob = await imagesToPdf(images);
+            const url = URL.createObjectURL(blob);
+            setResultUrl(url);
         } catch (error) {
             console.error('Conversion failed', error);
             alert('Failed to convert images to PDF.');

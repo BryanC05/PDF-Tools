@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Hash, Upload, Loader2, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
-import { API_URL } from '../lib/config';
+import { addPageNumbers } from '../lib/pdfUtilsClient';
 
 interface PageNumbersModalProps {
     isOpen: boolean;
@@ -33,16 +32,16 @@ export function PageNumbersModal({ isOpen, onClose }: PageNumbersModalProps) {
         setIsProcessing(true);
         setResultUrl(null);
         try {
-            const formData = new FormData();
-            formData.append('file', pdfFile);
-            formData.append('position', position);
-            formData.append('font_size', fontSize.toString());
-            formData.append('format_str', formatStr);
-            formData.append('start_number', startNumber.toString());
-            const response = await axios.post(`${API_URL}/add-page-numbers`, formData);
-            setResultUrl(`${API_URL}${response.data.url}`);
+            const blob = await addPageNumbers(pdfFile, {
+                position: position as any,
+                fontSize,
+                startNumber,
+                format: formatStr as any,
+            });
+            const url = URL.createObjectURL(blob);
+            setResultUrl(url);
         } catch (error: any) {
-            alert(error?.response?.data?.detail || 'Failed to add page numbers.');
+            alert('Failed to add page numbers.');
         } finally {
             setIsProcessing(false);
         }

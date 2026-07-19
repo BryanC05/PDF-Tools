@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Crop, Upload, Loader2, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
-import { API_URL } from '../lib/config';
+import { cropPdf } from '../lib/pdfUtilsClient';
 
 interface CropModalProps {
     isOpen: boolean;
@@ -33,16 +32,11 @@ export function CropModal({ isOpen, onClose }: CropModalProps) {
         setIsProcessing(true);
         setResultUrl(null);
         try {
-            const formData = new FormData();
-            formData.append('file', pdfFile);
-            formData.append('top', top.toString());
-            formData.append('bottom', bottom.toString());
-            formData.append('left', left.toString());
-            formData.append('right', right.toString());
-            const response = await axios.post(`${API_URL}/crop`, formData);
-            setResultUrl(`${API_URL}${response.data.url}`);
+            const blob = await cropPdf(pdfFile, { top, bottom, left, right });
+            const url = URL.createObjectURL(blob);
+            setResultUrl(url);
         } catch (error: any) {
-            alert(error?.response?.data?.detail || 'Failed to crop PDF.');
+            alert('Failed to crop PDF.');
         } finally {
             setIsProcessing(false);
         }

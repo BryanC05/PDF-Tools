@@ -2,8 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Stamp, Upload, Loader2, Download, X, RotateCw, Grid3X3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
-import { API_URL } from '../lib/config';
+import { addWatermark } from '../lib/pdfUtilsClient';
 
 interface WatermarkModalProps {
     isOpen: boolean;
@@ -61,19 +60,19 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
         setResultUrl(null);
 
         try {
-            const formData = new FormData();
-            formData.append('file', pdfFile);
-            formData.append('text', watermarkText);
-            formData.append('opacity', opacity.toString());
-            formData.append('font_size', fontSize.toString());
-            formData.append('rotation', rotation.toString());
-            formData.append('position', position);
-            formData.append('color', color);
-            formData.append('repeat_x', repeatX.toString());
-            formData.append('repeat_y', repeatY.toString());
-
-            const response = await axios.post(`${API_URL}/watermark`, formData);
-            setResultUrl(`${API_URL}${response.data.url}`);
+            const blob = await addWatermark(pdfFile, watermarkText, {
+                opacity,
+                fontSize,
+                rotation,
+                position: position as 'center' | 'tile',
+                color: {
+                    r: parseInt(color.slice(1, 3), 16) / 255,
+                    g: parseInt(color.slice(3, 5), 16) / 255,
+                    b: parseInt(color.slice(5, 7), 16) / 255,
+                }
+            });
+            const url = URL.createObjectURL(blob);
+            setResultUrl(url);
         } catch (error) {
             console.error('Watermarking failed', error);
             alert('Failed to add watermark.');
