@@ -111,12 +111,19 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
     };
 
     const getPositionStyles = () => {
-        if (position === 'center') return { inset: 0 };
+        if (position === 'center') return { top: '50%', left: '50%' };
         if (position === 'top-left') return { top: '5%', left: '5%' };
         if (position === 'top-right') return { top: '5%', right: '5%' };
         if (position === 'bottom-left') return { bottom: '5%', left: '5%' };
         if (position === 'bottom-right') return { bottom: '5%', right: '5%' };
         return {};
+    };
+
+    const getWatermarkTransform = () => {
+        if (position === 'center') {
+            return `translate(-50%, -50%) rotate(${rotation}deg)`;
+        }
+        return `rotate(${rotation}deg)`;
     };
 
     return (
@@ -127,15 +134,15 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="bg-white rounded-2xl shadow-xl w-full max-w-4xl flex flex-col overflow-hidden border border-gray-100 my-8"
+                        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-4xl flex flex-col overflow-hidden border border-gray-100 dark:border-gray-700 my-8"
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                                 <Stamp className="w-5 h-5 text-amber-500" />
                                 Add Watermark
                             </h3>
-                            <button onClick={handleClose} className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
+                            <button onClick={handleClose} className="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -143,41 +150,41 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                         {/* Content */}
                         <div className="flex flex-col md:flex-row">
                             {/* Left Panel - Controls */}
-                            <div className="w-full md:w-1/2 p-6 space-y-4 max-h-[75vh] overflow-y-auto border-r border-gray-100">
+                            <div className="w-full md:w-1/2 p-6 space-y-4 max-h-[75vh] overflow-y-auto border-r border-gray-100 dark:border-gray-700">
                                 {/* Dropzone */}
                                 <div
                                     {...getRootProps()}
-                                    className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${isDragActive ? 'border-amber-400 bg-amber-50' : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/50'
+                                    className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${isDragActive ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-amber-300 hover:bg-amber-50 dark:bg-amber-900/20/50'
                                         }`}
                                 >
                                     <input {...getInputProps()} />
                                     <Upload className="w-6 h-6 text-gray-300 mx-auto mb-2" />
                                     {pdfFile ? (
-                                        <p className="text-gray-700 font-medium text-sm">{pdfFile.name}</p>
+                                        <p className="text-gray-700 dark:text-gray-200 font-medium text-sm">{pdfFile.name}</p>
                                     ) : (
-                                        <p className="text-gray-500 text-sm">Drag & drop a PDF</p>
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm">Drag & drop a PDF</p>
                                     )}
                                 </div>
 
                                 {/* Watermark Text */}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700">Watermark Text</label>
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Watermark Text</label>
                                     <input
                                         type="text"
                                         value={watermarkText}
                                         onChange={(e) => setWatermarkText(e.target.value)}
                                         placeholder="Enter watermark text"
-                                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                                        className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
                                     />
                                 </div>
 
                                 {/* Position */}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700">Position</label>
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Position</label>
                                     <select
                                         value={position}
                                         onChange={(e) => setPosition(e.target.value)}
-                                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
+                                        className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none bg-white"
                                     >
                                         {POSITION_OPTIONS.map(opt => (
                                             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -187,13 +194,13 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
 
                                 {/* Color */}
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700">Color</label>
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Color</label>
                                     <div className="flex items-center gap-2 flex-wrap">
                                         {PRESET_COLORS.map(c => (
                                             <button
                                                 key={c}
                                                 onClick={() => setColor(c)}
-                                                className={`w-7 h-7 rounded-full border-2 transition-all ${color === c ? 'border-amber-500 scale-110' : 'border-gray-200'}`}
+                                                className={`w-7 h-7 rounded-full border-2 transition-all ${color === c ? 'border-amber-500 scale-110' : 'border-gray-200 dark:border-gray-600'}`}
                                                 style={{ backgroundColor: c }}
                                             />
                                         ))}
@@ -211,24 +218,24 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                                     <motion.div
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: 'auto' }}
-                                        className="p-4 bg-amber-50 rounded-xl space-y-3 border border-amber-100"
+                                        className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl space-y-3 border border-amber-100 dark:border-amber-800"
                                     >
-                                        <div className="flex items-center gap-2 text-amber-700">
+                                        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
                                             <Grid3X3 className="w-4 h-4" />
                                             <span className="font-medium text-sm">Tile Settings</span>
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-1">
-                                                <label className="text-xs text-gray-600">Columns</label>
+                                                <label className="text-xs text-gray-600 dark:text-gray-300">Columns</label>
                                                 <input type="number" min="1" max="10" value={repeatX}
                                                     onChange={(e) => setRepeatX(parseInt(e.target.value) || 1)}
-                                                    className="w-full px-3 py-2 border border-amber-200 rounded-lg text-center" />
+                                                    className="w-full px-3 py-2 border border-amber-200 dark:border-amber-700 rounded-lg text-center" />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-xs text-gray-600">Rows</label>
+                                                <label className="text-xs text-gray-600 dark:text-gray-300">Rows</label>
                                                 <input type="number" min="1" max="10" value={repeatY}
                                                     onChange={(e) => setRepeatY(parseInt(e.target.value) || 1)}
-                                                    className="w-full px-3 py-2 border border-amber-200 rounded-lg text-center" />
+                                                    className="w-full px-3 py-2 border border-amber-200 dark:border-amber-700 rounded-lg text-center" />
                                             </div>
                                         </div>
                                     </motion.div>
@@ -237,9 +244,9 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                                 {/* Sliders */}
                                 <div className="space-y-3">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700 flex justify-between">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex justify-between">
                                             <span>Font Size</span>
-                                            <span className="text-amber-600">{fontSize}px</span>
+                                            <span className="text-amber-600 dark:text-amber-400">{fontSize}px</span>
                                         </label>
                                         <input type="range" min="20" max="150" step="5" value={fontSize}
                                             onChange={(e) => setFontSize(parseInt(e.target.value))}
@@ -247,20 +254,20 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700 flex justify-between">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex justify-between">
                                             <span className="flex items-center gap-1">
                                                 <RotateCw className="w-3 h-3" /> Rotation
                                             </span>
-                                            <span className="text-amber-600">{rotation}°</span>
+                                            <span className="text-amber-600 dark:text-amber-400">{rotation}°</span>
                                         </label>
                                         <input type="range" min="-90" max="90" step="5" value={rotation}
                                             onChange={(e) => setRotation(parseInt(e.target.value))}
                                             className="w-full accent-amber-500" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700 flex justify-between">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-200 flex justify-between">
                                             <span>Opacity</span>
-                                            <span className="text-amber-600">{Math.round(opacity * 100)}%</span>
+                                            <span className="text-amber-600 dark:text-amber-400">{Math.round(opacity * 100)}%</span>
                                         </label>
                                         <input type="range" min="0.1" max="1" step="0.05" value={opacity}
                                             onChange={(e) => setOpacity(parseFloat(e.target.value))}
@@ -273,7 +280,7 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="p-4 bg-amber-50 border border-amber-200 rounded-xl"
+                                        className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl"
                                     >
                                         <a href={resultUrl} target="_blank" rel="noreferrer"
                                             className="flex items-center justify-center gap-2 w-full py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium">
@@ -284,7 +291,7 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                             </div>
 
                             {/* Right Panel - PDF Preview */}
-                            <div className="w-full md:w-1/2 p-6 bg-gray-50 flex flex-col items-center justify-center min-h-[500px]" ref={containerRef}>
+                            <div className="w-full md:w-1/2 p-6 bg-gray-50 dark:bg-gray-900/50 flex flex-col items-center justify-center min-h-[500px]" ref={containerRef}>
                                 {pdfUrl ? (
                                     <div className="relative">
                                         <Document
@@ -293,7 +300,7 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                                             loading={
                                                 <div className="flex items-center justify-center h-96">
                                                     <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                                                    <span className="ml-3 text-gray-600">Loading PDF...</span>
+                                                    <span className="ml-3 text-gray-600 dark:text-gray-300">Loading PDF...</span>
                                                 </div>
                                             }
                                             error={
@@ -344,7 +351,7 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                                                         })
                                                     ) : (
                                                         <div
-                                                            className="absolute pointer-events-none"
+                                                            className="absolute pointer-events-none flex items-center justify-center"
                                                             style={getPositionStyles()}
                                                         >
                                                             <span
@@ -353,7 +360,7 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                                                                     opacity: opacity,
                                                                     fontSize: `${fontSize / 2}px`,
                                                                     fontWeight: 'bold',
-                                                                    transform: `rotate(${rotation}deg)`,
+                                                                    transform: getWatermarkTransform(),
                                                                     whiteSpace: 'nowrap',
                                                                     textShadow: '0 1px 2px rgba(0,0,0,0.1)',
                                                                 }}
@@ -365,7 +372,7 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                                                 </div>
                                             </div>
                                         </Document>
-                                        <div className="mt-4 text-center text-sm text-gray-500">
+                                        <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
                                             Page 1 of {numPages} • Preview (watermark shown for illustration)
                                         </div>
                                     </div>
@@ -380,8 +387,8 @@ export function WatermarkModal({ isOpen, onClose }: WatermarkModalProps) {
                         </div>
 
                         {/* Footer */}
-                        <div className="p-4 border-t border-gray-100 flex justify-end gap-3">
-                            <button onClick={handleClose} className="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg font-medium">
+                        <div className="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+                            <button onClick={handleClose} className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg font-medium">
                                 Cancel
                             </button>
                             <button

@@ -30,7 +30,7 @@ import {
   FileDown, Wrench, ScanText,
   Image, FileText, Presentation, Sheet, Code,
   FileImage, Archive,
-  RotateCw, Hash, Stamp, Crop, Pencil,
+  RotateCw, Hash, Stamp, Crop, Pencil, Moon, Sun,
   type LucideIcon
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -60,6 +60,7 @@ function App() {
   const [isMerging, setIsMerging] = useState(false);
   const [mergedUrl, setMergedUrl] = useState<string | null>(null);
   const [showMergeSection, setShowMergeSection] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Modals State
   const [splittingFile, setSplittingFile] = useState<FileItem | null>(null);
@@ -188,18 +189,27 @@ function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900 font-sans selection:bg-primary-100 selection:text-primary-700">
+    <div className={`min-h-screen font-sans selection:bg-primary-100 selection:text-primary-700 transition-colors duration-300 ${isDarkMode ? 'bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100' : 'bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900'}`}>
       <div className="max-w-6xl mx-auto px-6 py-12 md:py-20">
 
         {/* Header */}
         <div className="text-center space-y-4 mb-12">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-white shadow-lg shadow-blue-900/5 mb-4 border border-gray-100">
-            <FileStack className="w-8 h-8 text-primary-500" />
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <div className={`inline-flex items-center justify-center p-3 rounded-2xl shadow-lg mb-4 border ${isDarkMode ? 'bg-gray-800 shadow-blue-900/20 border-gray-700' : 'bg-white shadow-blue-900/5 border-gray-100'}`}>
+              <FileStack className="w-8 h-8 text-primary-500" />
+            </div>
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className={`p-3 rounded-xl transition-all ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700 text-yellow-400 border border-gray-700' : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200'} shadow-lg`}
+              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
+          <h1 className={`text-4xl md:text-5xl font-bold tracking-tight ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
             Simple PDF
           </h1>
-          <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed">
+          <p className={`text-lg max-w-lg mx-auto leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             Every tool you need to work with PDFs in one place. Fast, secure, and running locally.
           </p>
         </div>
@@ -214,7 +224,7 @@ function App() {
               transition={{ delay: catIdx * 0.1 }}
               className="space-y-3"
             >
-              <h3 className={`text-xs font-bold tracking-wider uppercase ${category.color} px-1`}>
+              <h3 className={`text-xs font-bold tracking-wider uppercase px-1 ${isDarkMode ? 'text-gray-300' : category.color}`}>
                 {category.title}
               </h3>
               <div className="space-y-1">
@@ -225,12 +235,12 @@ function App() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: catIdx * 0.1 + toolIdx * 0.05 }}
                     onClick={tool.onClick}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 transition-all duration-200 group active:scale-[0.98] border border-transparent hover:border-gray-100"
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group active:scale-[0.98] border ${isDarkMode ? 'text-gray-300 hover:bg-gray-800 hover:shadow-md hover:shadow-gray-900/50 border-transparent hover:border-gray-700' : 'text-gray-700 hover:bg-white hover:shadow-md hover:shadow-gray-200/50 border-transparent hover:border-gray-100'}`}
                   >
-                    <div className={`p-1.5 rounded-lg bg-white shadow-sm border border-gray-100 group-hover:shadow-md transition-shadow ${tool.color}`}>
+                    <div className={`p-1.5 rounded-lg shadow-sm transition-shadow ${isDarkMode ? 'bg-gray-800 border border-gray-700 group-hover:shadow-md' : 'bg-white shadow-sm border border-gray-100 group-hover:shadow-md'} ${tool.color}`}>
                       <tool.icon className="w-4 h-4" />
                     </div>
-                    <span className="group-hover:text-gray-900 transition-colors">{tool.label}</span>
+                    <span className={isDarkMode ? 'group-hover:text-gray-100 transition-colors' : 'group-hover:text-gray-900 transition-colors'}>{tool.label}</span>
                   </motion.button>
                 ))}
               </div>
@@ -243,14 +253,14 @@ function App() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl border border-gray-100 shadow-lg shadow-gray-200/50 p-8 mb-8"
+            className={`rounded-2xl border shadow-lg p-8 mb-8 ${isDarkMode ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' : 'bg-white border-gray-100 shadow-gray-200/50'}`}
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <h2 className={`text-xl font-bold flex items-center gap-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-800'}`}>
                 <Merge className="w-5 h-5 text-primary-500" /> Merge, Split & Organize PDFs
               </h2>
               <button onClick={() => { setShowMergeSection(false); setFiles([]); setMergedUrl(null); }}
-                className="text-gray-400 hover:text-gray-600 text-sm font-medium">
+                className={`text-sm font-medium ${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
                 Close ✕
               </button>
             </div>
@@ -258,7 +268,7 @@ function App() {
             <Dropzone onFilesDropped={handleFilesDropped} />
 
             {isUploading && (
-              <div className="flex items-center justify-center py-4 text-primary-600 animate-pulse gap-2 mt-4">
+              <div className={`flex items-center justify-center py-4 animate-pulse gap-2 mt-4 ${isDarkMode ? 'text-primary-400' : 'text-primary-600'}`}>
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span className="font-medium text-sm">Uploading files...</span>
               </div>
@@ -280,7 +290,7 @@ function App() {
                   onClick={handleMerge}
                   disabled={files.length < 2 || isMerging}
                   className={
-                    "flex items-center gap-2 px-8 py-3.5 rounded-2xl font-semibold text-lg transition-all shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed " +
+                    "flex items-center gap-2 px-8 py-3.5 rounded-2xl font-semibold text-lg transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed " +
                     (files.length < 2
                       ? "bg-gray-200 text-gray-400"
                       : "bg-primary-600 hover:bg-primary-700 text-white hover:shadow-primary-600/30")
@@ -297,13 +307,13 @@ function App() {
               {mergedUrl && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4">
                   <a href={mergedUrl} download target="_blank" rel="noreferrer"
-                    className="flex items-center gap-3 px-6 py-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-colors shadow-sm">
-                    <div className="p-2 bg-white rounded-lg shadow-sm">
-                      <Download className="w-5 h-5 text-emerald-600" />
+                    className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-colors shadow-sm ${isDarkMode ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-800 hover:bg-emerald-900/50' : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'}`}>
+                    <div className={`p-2 rounded-lg shadow-sm ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                      <Download className={`w-5 h-5 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />
                     </div>
                     <div className="text-left">
                       <div className="font-semibold">Download Merged PDF</div>
-                      <div className="text-xs text-emerald-600/80">Click to save your file</div>
+                      <div className={`text-xs ${isDarkMode ? 'text-emerald-500/80' : 'text-emerald-600/80'}`}>Click to save your file</div>
                     </div>
                   </a>
                 </motion.div>
@@ -313,7 +323,7 @@ function App() {
         )}
 
         {/* Footer */}
-        <div className="text-center text-xs text-gray-400 mt-12 pt-8 border-t border-gray-200">
+        <div className={`text-center text-xs mt-12 pt-8 border-t ${isDarkMode ? 'text-gray-500 border-gray-800' : 'text-gray-400 border-gray-200'}`}>
           <p>Simple PDF — All processing happens locally. Your files are never uploaded to external servers.</p>
         </div>
       </div>

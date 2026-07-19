@@ -11,6 +11,13 @@
   --color-primary-700: #1d4ed8;
   --color-primary-800: #1e40af;
   --color-primary-900: #1e3a8a;
+  
+  --color-dark-bg: #111827;
+  --color-dark-surface: #1f2937;
+  --color-dark-surface-2: #374151;
+  --color-dark-border: #4b5563;
+  --color-dark-text: #f9fafb;
+  --color-dark-text-muted: #9ca3af;
 }
 
 body {
