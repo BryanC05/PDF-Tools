@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Code, Upload, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BackendRequiredBanner } from './BackendRequiredBanner';
+
 
 interface HtmlToPdfModalProps {
     isOpen: boolean;
@@ -61,11 +61,7 @@ export function HtmlToPdfModal({ isOpen, onClose }: HtmlToPdfModalProps) {
                                 )}
                             </div>
 
-                            <BackendRequiredBanner
-                                featureName="HTML to PDF Conversion"
-                                description="Converting HTML pages to PDF requires server-side rendering."
-                            />
-                        </div>
+                                                    </div>
 
                         <div className="p-4 border-t border-gray-100 flex justify-end">
                             <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg font-medium">

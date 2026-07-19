@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FileText, Upload, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BackendRequiredBanner } from './BackendRequiredBanner';
+
 
 interface PdfToWordModalProps {
     isOpen: boolean;
@@ -61,11 +61,7 @@ export function PdfToWordModal({ isOpen, onClose }: PdfToWordModalProps) {
                                 )}
                             </div>
 
-                            <BackendRequiredBanner
-                                featureName="PDF to WORD Conversion"
-                                description="Converting PDF to Word documents requires complex layout analysis and server-side processing."
-                            />
-                        </div>
+                                                    </div>
 
                         <div className="p-4 border-t border-gray-100 flex justify-end">
                             <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg font-medium">
