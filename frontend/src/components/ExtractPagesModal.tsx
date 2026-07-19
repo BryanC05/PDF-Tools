@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FileOutput, Upload, Loader2, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { extractPages, downloadBlob } from '../lib/pdfUtilsClient';
+import { extractPages } from '../lib/pdfUtilsClient';
 
 interface ExtractPagesModalProps {
     isOpen: boolean;

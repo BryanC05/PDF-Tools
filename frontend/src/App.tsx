@@ -322,8 +322,6 @@ function App() {
       {splittingFile && (
         <SplitterModal
           isOpen={true}
-          filename={splittingFile.original_name || splittingFile.id}
-          originalName={splittingFile.name}
           onClose={() => setSplittingFile(null)}
           onSplitComplete={(url) => { window.open(url, '_blank'); }}
         />

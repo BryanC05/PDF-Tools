@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Trash2, Upload, Loader2, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { removePages, downloadBlob } from '../lib/pdfUtilsClient';
+import { removePages } from '../lib/pdfUtilsClient';
 
 interface RemovePagesModalProps {
     isOpen: boolean;

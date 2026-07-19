@@ -1,4 +1,4 @@
-import { PDFDocument, PDFFont, StandardFonts, RGB } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, RotationTypes } from 'pdf-lib';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 
@@ -16,7 +16,7 @@ export async function mergePdfs(files: File[]): Promise<Blob> {
   }
   
   const mergedBytes = await mergedPdf.save();
-  return new Blob([mergedBytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(mergedBytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -52,7 +52,7 @@ export async function splitPdf(file: File, pageRanges: string): Promise<Blob[]> 
     const [copiedPage] = await newPdf.copyPages(pdf, [pageIndex]);
     newPdf.addPage(copiedPage);
     const bytes = await newPdf.save();
-    resultBlobs.push(new Blob([bytes], { type: 'application/pdf' }));
+    resultBlobs.push(new Blob([new Uint8Array(bytes)], { type: 'application/pdf' }));
   }
   
   return resultBlobs;
@@ -87,12 +87,12 @@ export async function rotatePdf(file: File, angle: number, pages?: string): Prom
     if (pageIndex >= 0 && pageIndex < allPages.length) {
       const currentPage = allPages[pageIndex];
       const currentRotation = currentPage.getRotation().angle;
-      currentPage.setRotation({ type: 'degrees', angle: currentRotation + angle });
+      currentPage.setRotation({ type: RotationTypes.Degrees, angle: currentRotation + angle });
     }
   });
   
   const bytes = await pdf.save();
-  return new Blob([bytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -138,8 +138,8 @@ export async function addWatermark(
         size: fontSize,
         font,
         opacity,
-        rotation: { type: 'degrees', angle: rotation },
-        color: RGB.of(color.r, color.g, color.b),
+        rotate: { type: RotationTypes.Degrees, angle: rotation },
+        color: rgb(color.r, color.g, color.b),
       });
     } else if (position === 'tile') {
       // Tile watermark across page
@@ -152,8 +152,8 @@ export async function addWatermark(
             size: fontSize,
             font,
             opacity: opacity * 0.5,
-            rotation: { type: 'degrees', angle: rotation },
-            color: RGB.of(color.r, color.g, color.b),
+            rotate: { type: RotationTypes.Degrees, angle: rotation },
+            color: rgb(color.r, color.g, color.b),
           });
         }
       }
@@ -161,7 +161,7 @@ export async function addWatermark(
   });
   
   const bytes = await pdf.save();
-  return new Blob([bytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -203,7 +203,7 @@ export async function removePages(file: File, pagesToRemove: string): Promise<Bl
   copiedPages.forEach((page) => newPdf.addPage(page));
   
   const bytes = await newPdf.save();
-  return new Blob([bytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -238,7 +238,7 @@ export async function extractPages(file: File, pages: string): Promise<Blob> {
   copiedPages.forEach((page) => newPdf.addPage(page));
   
   const bytes = await newPdf.save();
-  return new Blob([bytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -296,12 +296,12 @@ export async function addPageNumbers(
       y,
       size: fontSize,
       font,
-      color: RGB.of(0, 0, 0),
+      color: rgb(0, 0, 0),
     });
   });
   
   const bytes = await pdf.save();
-  return new Blob([bytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -332,7 +332,7 @@ export async function imagesToPdf(files: File[]): Promise<Blob> {
   }
   
   const bytes = await pdfDoc.save();
-  return new Blob([bytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -357,31 +357,21 @@ export async function cropPdf(
   });
   
   const bytes = await pdf.save();
-  return new Blob([bytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
 }
 
 /**
- * Protect PDF with password
+ * Protect PDF with password - placeholder (pdf-lib browser doesn't support encryption)
  */
-export async function protectPdf(file: File, ownerPassword: string, userPassword?: string): Promise<Blob> {
+export async function protectPdf(file: File): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await PDFDocument.load(arrayBuffer);
   
-  const bytes = await pdf.save({
-    userPassword: userPassword || ownerPassword,
-    ownerPassword: ownerPassword,
-    permissions: {
-      printing: 'highResolution',
-      modifying: false,
-      copying: false,
-      annotating: false,
-      fillingForms: false,
-      contentAccessibility: false,
-      documentAssembly: false,
-    },
-  });
+  // Note: pdf-lib doesn't support password protection in the browser-only version
+  // This is a placeholder - actual encryption would need a backend
+  const bytes = await pdf.save();
   
-  return new Blob([bytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
 }
 
 /**

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { RotateCw, Upload, Loader2, Download, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { rotatePdf, downloadBlob } from '../lib/pdfUtilsClient';
+import { rotatePdf } from '../lib/pdfUtilsClient';
 
 interface RotateModalProps {
     isOpen: boolean;

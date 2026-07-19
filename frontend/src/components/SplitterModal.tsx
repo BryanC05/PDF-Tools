@@ -4,14 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { splitPdf, downloadAsZip } from '../lib/pdfUtilsClient';
 
 interface SplitterModalProps {
-    filename: string;
-    originalName: string;
     isOpen: boolean;
     onClose: () => void;
     onSplitComplete: (url: string) => void;
 }
 
-export function SplitterModal({ filename, originalName, isOpen, onClose, onSplitComplete }: SplitterModalProps) {
+export function SplitterModal({ isOpen, onClose, onSplitComplete }: SplitterModalProps) {
     const [pageRanges, setPageRanges] = useState('');
     const [isSplitting, setIsSplitting] = useState(false);
     const [pdfFile, setPdfFile] = useState<File | null>(null);
