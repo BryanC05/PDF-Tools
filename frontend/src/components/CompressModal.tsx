@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Archive, Upload, X, Loader2, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { callBackend } from '../lib/apiConfig';
+import { BACKEND_URL } from '../lib/apiConfig';
 
 interface CompressModalProps {
     isOpen: boolean;
@@ -38,9 +38,21 @@ export function CompressModal({ isOpen, onClose }: CompressModalProps) {
         try {
             const formData = new FormData();
             formData.append('file', pdfFile);
-            formData.append('compression_level', compressionLevel);
             
-            const blob = await callBackend('/compress', formData);
+            const response = await fetch(`${BACKEND_URL}/compress`, {
+                method: 'POST',
+                body: formData,
+            });
+            
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Compression failed: ${error}`);
+            }
+            
+            const data = await response.json();
+            // Download from the URL provided by backend
+            const downloadResp = await fetch(`${BACKEND_URL}${data.url}`);
+            const blob = await downloadResp.blob();
             const url = URL.createObjectURL(blob);
             setResultUrl(url);
         } catch (error) {

@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, Loader2, Download, Wrench } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { callBackend } from '../lib/apiConfig';
+import { BACKEND_URL } from '../lib/apiConfig';
 
 interface RepairModalProps {
     isOpen: boolean;
@@ -38,7 +38,19 @@ export function RepairModal({ isOpen, onClose }: RepairModalProps) {
             const formData = new FormData();
             formData.append('file', pdfFile);
             
-            const blob = await callBackend('/repair', formData);
+            const response = await fetch(`${BACKEND_URL}/repair`, {
+                method: 'POST',
+                body: formData,
+            });
+            
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Repair failed: ${error}`);
+            }
+            
+            const data = await response.json();
+            const downloadResp = await fetch(`${BACKEND_URL}${data.url}`);
+            const blob = await downloadResp.blob();
             const url = URL.createObjectURL(blob);
             setResultUrl(url);
         } catch (error) {
